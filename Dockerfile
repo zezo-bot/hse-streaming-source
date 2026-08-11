@@ -1,11 +1,11 @@
-FROM mhart/alpine-node:12 AS node-base
+FROM node:20-alpine AS node-base
 
-RUN apk add --no-cache unzip git
+RUN apk add --no-cache unzip git && corepack enable
 COPY hse-streaming-source-main-fixed.zip /tmp/source.zip
 RUN mkdir -p /src /app/build && unzip -q /tmp/source.zip -d /src
 RUN cp /src/hse-streaming-source-main/plugin/package.json /app/package.json && cp /src/hse-streaming-source-main/plugin/yarn.lock /app/yarn.lock
 WORKDIR /app
-RUN yarn install
+RUN yarn install --ignore-engines
 
 FROM node-base AS plugin-build
 RUN cp -R /src/hse-streaming-source-main/plugin/. /app/
