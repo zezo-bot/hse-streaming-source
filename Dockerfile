@@ -5,7 +5,7 @@ COPY hse-streaming-source-main-fixed.zip /tmp/source.zip
 RUN mkdir -p /src /app/build && unzip -q /tmp/source.zip -d /src
 RUN cp /src/hse-streaming-source-main/plugin/package.json /app/package.json && cp /src/hse-streaming-source-main/plugin/yarn.lock /app/yarn.lock
 WORKDIR /app
-RUN yarn install --frozen-lockfile --ignore-engines
+RUN yarn install --ignore-engines
 
 FROM node-base AS plugin-build
 RUN cp -R /src/hse-streaming-source-main/plugin/. /app/
