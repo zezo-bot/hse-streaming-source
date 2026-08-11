@@ -9,7 +9,7 @@ RUN yarn install --ignore-engines
 
 FROM node-base AS plugin-build
 RUN cp -R /src/hse-streaming-source-main/plugin/. /app/
-RUN yarn config set ignore-engines true && yarn lint --fix && yarn build
+RUN yarn config set ignore-engines true && yarn prettier --write src && yarn eslint --fix src && yarn build
 
 FROM grafana/grafana:7.4.3 AS grafana
 COPY --from=plugin-build /app/dist/ /var/lib/hse/hse-streaming-datasource
