@@ -1,30 +1,22 @@
 FROM mhart/alpine-node:12 AS node-base
 
-COPY plugin/package.json /app/package.json
-COPY plugin/yarn.lock /app/yarn.lock
-
-RUN mkdir /app/build
+RUN apk add --no-cache unzip
+COPY hse-streaming-source-main-fixed.zip /tmp/source.zip
+RUN mkdir -p /src /app/build && unzip -q /tmp/source.zip -d /src
+RUN cp /src/hse-streaming-source-main/plugin/package.json /app/package.json && cp /src/hse-streaming-source-main/plugin/yarn.lock /app/yarn.lock
 WORKDIR /app
 RUN yarn install
 
 FROM node-base AS plugin-build
-
-COPY plugin/ /app/
-RUN yarn dev
-#enable this for prod
-RUN yarn build 
-
+RUN cp -R /src/hse-streaming-source-main/plugin/. /app/
+RUN yarn build
 
 FROM grafana/grafana:7.4.3 AS grafana
 COPY --from=plugin-build /app/dist/ /var/lib/hse/hse-streaming-datasource
-COPY grafana/provisioning/ /etc/grafana/provisioning/
-COPY grafana/dashboards/ /var/lib/grafana/dashboards/
+COPY --from=plugin-build /src/hse-streaming-source-main/grafana/provisioning/ /etc/grafana/provisioning/
+COPY --from=plugin-build /src/hse-streaming-source-main/grafana/dashboards/ /var/lib/grafana/dashboards/
+COPY --from=plugin-build /src/hse-streaming-source-main/grafana/run-and-copy.sh /run-and-copy.sh
 ENV GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH=/var/lib/grafana/dashboards/test-dashboard.json
-#this is a little bit stupid workaround but as we want the grafana.db to be in the volume
-#and the grafana.db is in the same directory as the plugin folder
-#we have to copy the new plugin on the start of the container so it wont be
-#overwritten by an old version already in the volume. This is only important
-#for development. 
-COPY grafana/run-and-copy.sh /run-and-copy.sh
+ENV GF_SERVER_HTTP_ADDR=0.0.0.0
 USER grafana
-ENTRYPOINT ["/run-and-copy.sh"]
+ENTRYPOINT ["/bin/sh", "-c", "export GF_SERVER_HTTP_PORT=${PORT:-3000}; exec /run-and-copy.sh"]
