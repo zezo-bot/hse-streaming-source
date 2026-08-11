@@ -1,11 +1,11 @@
-FROM node:20-alpine AS node-base
+FROM node:14-bullseye AS node-base
 
-RUN apk add --no-cache unzip git && corepack enable
+RUN apt-get update && apt-get install -y --no-install-recommends git unzip && rm -rf /var/lib/apt/lists/* && npm install -g yarn@1.22.22
 COPY hse-streaming-source-main-fixed.zip /tmp/source.zip
 RUN mkdir -p /src /app/build && unzip -q /tmp/source.zip -d /src
 RUN cp /src/hse-streaming-source-main/plugin/package.json /app/package.json && cp /src/hse-streaming-source-main/plugin/yarn.lock /app/yarn.lock
 WORKDIR /app
-RUN yarn install --ignore-engines
+RUN yarn install --frozen-lockfile
 
 FROM node-base AS plugin-build
 RUN cp -R /src/hse-streaming-source-main/plugin/. /app/
